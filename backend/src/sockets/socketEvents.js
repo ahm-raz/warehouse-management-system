@@ -1,5 +1,6 @@
 import logger from "../logs/logger.js";
 import { initializeSocketRooms, leaveAllRooms } from "./socketRooms.js";
+import { checkSocketEventRateLimit } from "../config/security/rateLimiters.js";
 
 /**
  * Socket Event Handlers
@@ -109,6 +110,19 @@ const registerEventListeners = (socket) => {
   // Handle custom client events (if needed in future)
   socket.on("client:event", (data) => {
     try {
+      // Rate limit check
+      if (!checkSocketEventRateLimit(socket.id, "client:event", 100, 60000)) {
+        logger.warn("Socket event rate limit exceeded", {
+          socketId: socket.id,
+          userId: socket.user?.userId,
+          eventName: "client:event",
+        });
+        socket.emit("error", {
+          message: "Rate limit exceeded. Please slow down.",
+        });
+        return;
+      }
+
       logger.debug("Client event received", {
         socketId: socket.id,
         userId: socket.user?.userId,

@@ -32,6 +32,10 @@ const connectDB = async () => {
     try {
       logger.info(`MongoDB connection attempt ${retries + 1}/${MAX_RETRIES}...`);
 
+      // Enable strict query mode to prevent NoSQL injection
+      // This ensures that only fields defined in schemas are allowed in queries
+      mongoose.set("strictQuery", true);
+
       const conn = await mongoose.connect(mongoURI, {
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,

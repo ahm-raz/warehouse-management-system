@@ -106,18 +106,20 @@ export const loginUser = async (credentials, ipAddress) => {
     throw new ApiError(403, "Account is deactivated");
   }
 
-  // Check if account is locked
-  if (user.isLocked()) {
-    const lockTime = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
+  // Check if account is locked using enhanced login protection
+  const loginProtection = await import("../utils/loginProtection.js");
+  const lockStatus = loginProtection.default.checkAccountLock(user);
+
+  if (lockStatus.isLocked) {
     logger.warn("Login attempt on locked account", {
       userId: user._id,
       email: user.email,
       ip: ipAddress,
-      lockTimeRemaining: `${lockTime} minutes`,
+      lockTimeRemaining: `${lockStatus.lockTimeRemaining} minutes`,
     });
     throw new ApiError(
       423,
-      `Account is locked. Please try again in ${lockTime} minutes`
+      `Account is locked. Please try again in ${lockStatus.lockTimeRemaining} minutes`
     );
   }
 
@@ -125,32 +127,27 @@ export const loginUser = async (credentials, ipAddress) => {
   const isPasswordValid = await user.comparePassword(password);
 
   if (!isPasswordValid) {
-    // Increment login attempts
-    await user.incLoginAttempts();
+    // Record failed login attempt using enhanced protection
+    const result = await loginProtection.default.recordFailedLoginAttempt(email, ipAddress);
 
-    logger.warn("Failed login attempt", {
-      userId: user._id,
-      email: user.email,
-      ip: ipAddress,
-      attempts: user.loginAttempts + 1,
-    });
-
-    // Check if account should be locked
-    const updatedUser = await User.findByEmail(email.toLowerCase());
-    if (updatedUser.isLocked()) {
+    if (result && result.isLocked) {
       logger.warn("Account locked due to multiple failed login attempts", {
-        userId: updatedUser._id,
-        email: updatedUser.email,
+        userId: result.user._id,
+        email: result.user.email,
         ip: ipAddress,
+        lockTimeRemaining: result.lockTimeRemaining,
       });
-      throw new ApiError(423, "Account locked due to multiple failed attempts");
+      throw new ApiError(
+        423,
+        `Account locked due to multiple failed attempts. Please try again in ${result.lockTimeRemaining} minutes`
+      );
     }
 
     throw new ApiError(401, "Invalid email or password");
   }
 
   // Reset login attempts on successful login
-  await user.resetLoginAttempts();
+  await loginProtection.default.resetLoginAttempts(user._id.toString());
 
   // Update last login
   user.lastLogin = new Date();

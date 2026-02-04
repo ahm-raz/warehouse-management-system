@@ -1,11 +1,18 @@
 import express from "express";
-import helmet from "helmet";
 import compression from "compression";
 import cookieParser from "cookie-parser";
-import xss from "xss-clean";
-import hpp from "hpp";
-import corsOptions from "./src/config/cors.js";
-import limiter from "./src/config/rateLimiter.js";
+import helmetConfig from "./src/config/security/helmetConfig.js";
+import corsConfig from "./src/config/security/corsConfig.js";
+import hppConfig from "./src/config/security/hppConfig.js";
+import {
+  globalLimiter,
+  authLimiter,
+  uploadLimiter,
+  reportLimiter,
+} from "./src/config/security/rateLimiters.js";
+import ipLogger from "./src/middleware/ipLogger.js";
+import mongoSanitizer from "./src/middleware/mongoSanitizer.js";
+import xssSanitizer from "./src/middleware/xssSanitizer.js";
 import requestLogger from "./src/logs/requestLogger.js";
 import notFound from "./src/middleware/notFound.js";
 import errorHandler from "./src/middleware/errorHandler.js";
@@ -38,25 +45,36 @@ const app = express();
 app.set("trust proxy", 1);
 
 // ==================== SECURITY MIDDLEWARE ====================
-// Security middleware must be applied first
+// Security middleware must be applied in correct order for maximum protection
+// Order: IP Logger -> Helmet -> CORS -> Rate Limiting -> Mongo Sanitization -> XSS -> HPP -> Body Parsing
 
-// Security headers
-app.use(helmet());
+// 1. IP Logger - Capture client IP first
+app.use(ipLogger);
 
-// CORS middleware
-app.use(corsOptions);
+// 2. Helmet - Security headers (CSP, XSS protection, frame options, etc.)
+app.use(helmetConfig);
 
-// XSS protection
-app.use(xss());
+// 3. CORS - Cross-Origin Resource Sharing (must be before routes)
+app.use(corsConfig);
 
-// HTTP Parameter Pollution protection
-app.use(hpp());
+// 4. Rate Limiting - Global rate limiter (applied to all API routes)
+app.use("/api/", globalLimiter);
+
+// 5. MongoDB Sanitization - Prevent NoSQL injection (before body parsing)
+app.use(mongoSanitizer);
+
+// 6. XSS Sanitization - Prevent XSS attacks (before body parsing)
+app.use(xssSanitizer);
+
+// 7. HTTP Parameter Pollution Protection - Prevent duplicate parameters
+app.use(hppConfig);
 
 // ==================== PARSING MIDDLEWARE ====================
 
 // Body parser middleware
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// Reduced limit for security (1MB for JSON, uploads handled separately)
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // Cookie parser
 app.use(cookieParser());
@@ -90,14 +108,9 @@ app.use(compression());
 // HTTP request logger (integrated with Winston)
 app.use(requestLogger);
 
-// ==================== RATE LIMITING ====================
-// Rate limiting after logging but before routes
-
-app.use("/api/", limiter);
-
 // ==================== ROUTES ====================
 
-// Health check route
+// Health check route (no rate limiting)
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -107,8 +120,8 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Authentication routes
-app.use("/api/auth", authRoutes);
+// Authentication routes (strict rate limiting)
+app.use("/api/auth", authLimiter, authRoutes);
 
 // User management routes
 app.use("/api/users", userRoutes);
@@ -140,11 +153,11 @@ app.use("/api/tasks", taskRoutes);
 // Notification management routes
 app.use("/api/notifications", notificationRoutes);
 
-// Report management routes
-app.use("/api/reports", reportRoutes);
+// Report management routes (rate limited)
+app.use("/api/reports", reportLimiter, reportRoutes);
 
-// File upload routes
-app.use("/api/uploads", uploadRoutes);
+// File upload routes (rate limited)
+app.use("/api/uploads", uploadLimiter, uploadRoutes);
 
 // Root route
 app.get("/", (req, res) => {

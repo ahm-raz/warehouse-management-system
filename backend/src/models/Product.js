@@ -63,6 +63,12 @@ const productSchema = new mongoose.Schema(
       ref: "Location",
       index: true,
     },
+    imageUrl: {
+      type: String,
+      trim: true,
+      default: null,
+      index: true,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

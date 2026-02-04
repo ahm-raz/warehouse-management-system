@@ -22,6 +22,9 @@ import locationRoutes from "./src/routes/locationRoutes.js";
 import taskRoutes from "./src/routes/taskRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
 import reportRoutes from "./src/routes/reportRoutes.js";
+import uploadRoutes from "./src/routes/uploadRoutes.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 /**
  * Express Application Configuration
@@ -57,6 +60,26 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Cookie parser
 app.use(cookieParser());
+
+// ==================== STATIC FILE SERVING ====================
+// Serve uploaded files as static resources
+// Allows public access to uploaded product images
+
+// Get current directory (ES modules compatibility)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve uploads directory as static files
+// Files accessible at: /uploads/products/images/filename.jpg
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    // Security: Don't serve directory listings
+    dotfiles: "deny",
+    // Set cache headers for uploaded images
+    maxAge: "1d", // Cache for 1 day
+  })
+);
 
 // Compression middleware (gzip)
 app.use(compression());
@@ -119,6 +142,9 @@ app.use("/api/notifications", notificationRoutes);
 
 // Report management routes
 app.use("/api/reports", reportRoutes);
+
+// File upload routes
+app.use("/api/uploads", uploadRoutes);
 
 // Root route
 app.get("/", (req, res) => {

@@ -20,6 +20,7 @@ import orderRoutes from "./src/routes/orderRoutes.js";
 import receivingRoutes from "./src/routes/receivingRoutes.js";
 import locationRoutes from "./src/routes/locationRoutes.js";
 import taskRoutes from "./src/routes/taskRoutes.js";
+import notificationRoutes from "./src/routes/notificationRoutes.js";
 
 /**
  * Express Application Configuration
@@ -111,6 +112,9 @@ app.use("/api/locations", locationRoutes);
 
 // Task management routes
 app.use("/api/tasks", taskRoutes);
+
+// Notification management routes
+app.use("/api/notifications", notificationRoutes);
 
 // Root route
 app.get("/", (req, res) => {

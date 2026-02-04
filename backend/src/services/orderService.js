@@ -543,6 +543,31 @@ export const updateOrderStatus = async (orderId, newStatus, performedBy) => {
       performedBy: performedBy,
     });
 
+    // Trigger order status notification
+    try {
+      const { triggerOrderStatusNotification } = await import("./notificationService.js");
+      const populatedOrderForNotification = await Order.findById(order._id)
+        .populate("assignedStaff", "name email")
+        .lean();
+      
+      await triggerOrderStatusNotification(
+        {
+          orderId: order._id,
+          orderNumber: order.orderNumber,
+          assignedStaff: populatedOrderForNotification.assignedStaff?._id?.toString(),
+          customerName: populatedOrderForNotification.customerName,
+        },
+        oldStatus,
+        newStatus
+      );
+    } catch (notificationError) {
+      logger.error("Failed to trigger order status notification", {
+        error: notificationError.message,
+        orderId: order._id,
+      });
+      // Don't throw - notification failure shouldn't break order update
+    }
+
     const populatedOrder = await Order.findById(order._id)
       .populate("items.product", "name SKU")
       .populate("assignedStaff", "name email")

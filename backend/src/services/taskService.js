@@ -139,6 +139,25 @@ export const createTask = async (taskData, performedBy) => {
     performedBy: performedBy,
   });
 
+  // Trigger task assignment notification
+  try {
+    const { triggerTaskAssignmentNotification } = await import("./notificationService.js");
+    await triggerTaskAssignmentNotification(
+      {
+        taskId: task._id,
+        title: task.title,
+        taskType: task.taskType,
+      },
+      task.assignedTo.toString()
+    );
+  } catch (notificationError) {
+    logger.error("Failed to trigger task assignment notification", {
+      error: notificationError.message,
+      taskId: task._id,
+    });
+    // Don't throw - notification failure shouldn't break task creation
+  }
+
   // Populate related fields for response
   const populatedTask = await Task.findById(task._id)
     .populate("assignedTo", "name email role")
@@ -448,6 +467,25 @@ export const assignTask = async (taskId, newAssignedTo, performedBy) => {
     newAssignedTo: task.assignedTo.toString(),
     performedBy: performedBy,
   });
+
+  // Trigger task assignment notification for new assignee
+  try {
+    const { triggerTaskAssignmentNotification } = await import("./notificationService.js");
+    await triggerTaskAssignmentNotification(
+      {
+        taskId: task._id,
+        title: task.title,
+        taskType: task.taskType,
+      },
+      task.assignedTo.toString()
+    );
+  } catch (notificationError) {
+    logger.error("Failed to trigger task assignment notification", {
+      error: notificationError.message,
+      taskId: task._id,
+    });
+    // Don't throw - notification failure shouldn't break task assignment
+  }
 
   const populatedTask = await Task.findById(task._id)
     .populate("assignedTo", "name email role")

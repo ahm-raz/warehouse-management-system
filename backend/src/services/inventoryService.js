@@ -127,6 +127,24 @@ export const adjustStock = async (
         });
         // Don't throw - socket failure shouldn't break inventory update
       }
+
+      // Trigger low stock notification
+      try {
+        const { triggerLowStockAlert } = await import("./notificationService.js");
+        await triggerLowStockAlert({
+          productId: product._id,
+          productName: product.name,
+          SKU: product.SKU,
+          quantity: newQuantity,
+          minimumStockLevel: product.minimumStockLevel,
+        });
+      } catch (notificationError) {
+        logger.error("Failed to trigger low stock notification", {
+          error: notificationError.message,
+          productId: product._id,
+        });
+        // Don't throw - notification failure shouldn't break inventory update
+      }
     }
 
     // Emit inventory update event via Socket.io

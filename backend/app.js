@@ -16,6 +16,7 @@ import productRoutes from "./src/routes/productRoutes.js";
 import inventoryRoutes from "./src/routes/inventoryRoutes.js";
 import categoryRoutes from "./src/routes/categoryRoutes.js";
 import supplierRoutes from "./src/routes/supplierRoutes.js";
+import orderRoutes from "./src/routes/orderRoutes.js";
 
 /**
  * Express Application Configuration
@@ -95,6 +96,9 @@ app.use("/api/categories", categoryRoutes);
 
 // Supplier management routes
 app.use("/api/suppliers", supplierRoutes);
+
+// Order management routes
+app.use("/api/orders", orderRoutes);
 
 // Root route
 app.get("/", (req, res) => {

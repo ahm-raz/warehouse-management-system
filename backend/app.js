@@ -12,6 +12,8 @@ import errorHandler from "./src/middleware/errorHandler.js";
 import logger from "./src/logs/logger.js";
 import authRoutes from "./src/routes/authRoutes.js";
 import userRoutes from "./src/routes/userRoutes.js";
+import productRoutes from "./src/routes/productRoutes.js";
+import inventoryRoutes from "./src/routes/inventoryRoutes.js";
 
 /**
  * Express Application Configuration
@@ -79,6 +81,12 @@ app.use("/api/auth", authRoutes);
 
 // User management routes
 app.use("/api/users", userRoutes);
+
+// Product management routes
+app.use("/api/products", productRoutes);
+
+// Inventory management routes
+app.use("/api/inventory", inventoryRoutes);
 
 // Root route
 app.get("/", (req, res) => {

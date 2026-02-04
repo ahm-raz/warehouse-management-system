@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import http from "http";
 import connectDB from "./src/config/db.js";
 import { initializeSocket, closeSocket } from "./src/sockets/index.js";
+import { initializeJobs, stopAllJobs } from "./src/jobs/index.js";
 import app from "./app.js";
 import logger from "./src/logs/logger.js";
 
@@ -37,6 +38,10 @@ const startServer = async () => {
     // Initialize Socket.io with authentication and event handling
     logger.info("Initializing Socket.io...");
     initializeSocket(server);
+
+    // Initialize background jobs
+    logger.info("Initializing background jobs...");
+    initializeJobs();
 
     // Start HTTP server
     server.listen(PORT, () => {
@@ -85,7 +90,17 @@ const gracefulShutdown = async (signal) => {
   logger.info(`${signal} signal received: starting graceful shutdown...`);
 
   if (server) {
-    // Close Socket.io server first
+    // Stop background jobs first
+    try {
+      await stopAllJobs();
+      logger.info("Background jobs stopped");
+    } catch (jobError) {
+      logger.error("Error stopping background jobs", {
+        error: jobError.message,
+      });
+    }
+
+    // Close Socket.io server
     try {
       await closeSocket();
       logger.info("Socket.io server closed");

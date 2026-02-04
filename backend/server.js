@@ -1,8 +1,7 @@
 import dotenv from "dotenv";
 import http from "http";
 import connectDB from "./src/config/db.js";
-import { initializeSocket } from "./src/config/socket.js";
-import { initializeSocketHandlers } from "./src/sockets/index.js";
+import { initializeSocket, closeSocket } from "./src/sockets/index.js";
 import app from "./app.js";
 import logger from "./src/logs/logger.js";
 
@@ -35,10 +34,9 @@ const startServer = async () => {
     // Create HTTP server
     server = http.createServer(app);
 
-    // Initialize Socket.io
+    // Initialize Socket.io with authentication and event handling
     logger.info("Initializing Socket.io...");
     initializeSocket(server);
-    initializeSocketHandlers();
 
     // Start HTTP server
     server.listen(PORT, () => {
@@ -83,10 +81,20 @@ const startServer = async () => {
  * Gracefully shutdown the server
  * Closes all connections and exits process
  */
-const gracefulShutdown = (signal) => {
+const gracefulShutdown = async (signal) => {
   logger.info(`${signal} signal received: starting graceful shutdown...`);
 
   if (server) {
+    // Close Socket.io server first
+    try {
+      await closeSocket();
+      logger.info("Socket.io server closed");
+    } catch (socketError) {
+      logger.error("Error closing Socket.io server", {
+        error: socketError.message,
+      });
+    }
+
     server.close(() => {
       logger.info("HTTP server closed");
       logger.info("Graceful shutdown completed");

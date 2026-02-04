@@ -1,68 +1,105 @@
-import { getSocket } from "../config/socket.js";
+import { Server } from "socket.io";
 import logger from "../logs/logger.js";
+import { authenticateSocket } from "./socketAuth.js";
+import { handleConnection, handleDisconnection, handleError } from "./socketEvents.js";
 
 /**
- * Socket.io Event Handlers
- * Centralized place for all socket event handling
- * Implements comprehensive logging for socket events
+ * Socket.io Real-time Infrastructure
+ * Main socket server initialization and configuration
+ * Supports JWT authentication, room management, and event broadcasting
+ * 
+ * Architecture Notes:
+ * - Current implementation uses in-memory room management
+ * - Future: Can be extended with Redis adapter for horizontal scaling
+ *   Example: io.adapter(createAdapter(redisClient))
+ * - Room structure supports multi-server deployment
  */
 
+let io = null;
+
 /**
- * Initialize socket event handlers
- * Sets up custom event handlers for warehouse management operations
+ * Initialize Socket.io server
+ * Attaches to HTTP server with authentication and event handling
+ * @param {http.Server} server - HTTP server instance
+ * @returns {Server} Socket.io server instance
  */
-export const initializeSocketHandlers = () => {
+export const initializeSocket = (server) => {
   try {
-    const io = getSocket();
+    const clientURL = process.env.CLIENT_URL || "http://localhost:5173";
 
-    // Handle all socket connections
+    logger.info("Initializing Socket.io server", {
+      clientURL: clientURL,
+      transports: ["websocket", "polling"],
+    });
+
+    // Create Socket.io server instance
+    io = new Server(server, {
+      cors: {
+        origin: clientURL,
+        methods: ["GET", "POST"],
+        credentials: true,
+      },
+      transports: ["websocket", "polling"],
+      // Enable reconnection
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: Infinity,
+      // Connection timeout
+      connectTimeout: 45000,
+      // Ping/pong for connection health
+      pingTimeout: 20000,
+      pingInterval: 25000,
+    });
+
+    // ==================== AUTHENTICATION MIDDLEWARE ====================
+    // Apply authentication middleware to all connections
+    io.use(authenticateSocket);
+
+    // ==================== CONNECTION EVENT HANDLERS ====================
+
     io.on("connection", (socket) => {
-      logger.info("Socket.io custom handler: client connected", {
-        socketId: socket.id,
-        transport: socket.conn.transport.name,
-      });
+      // Handle successful connection
+      handleConnection(socket);
 
-      // Disconnection event
+      // Handle disconnection
       socket.on("disconnect", (reason) => {
-        logger.info("Socket.io custom handler: client disconnected", {
-          socketId: socket.id,
-          reason: reason,
-        });
+        handleDisconnection(socket, reason);
       });
 
-      // Error handling
+      // Handle errors
       socket.on("error", (error) => {
-        logger.error("Socket.io custom handler: error", {
-          socketId: socket.id,
-          message: error.message,
-          stack: error.stack,
-        });
-      });
-
-      // Example: Handle warehouse updates
-      socket.on("warehouse:update", (data) => {
-        logger.info("Warehouse update received via Socket.io", {
-          socketId: socket.id,
-          data: data,
-        });
-        // Broadcast to other clients
-        socket.broadcast.emit("warehouse:updated", data);
-      });
-
-      // Example: Handle inventory changes
-      socket.on("inventory:change", (data) => {
-        logger.info("Inventory change received via Socket.io", {
-          socketId: socket.id,
-          data: data,
-        });
-        // Broadcast to other clients
-        socket.broadcast.emit("inventory:changed", data);
+        handleError(socket, error);
       });
     });
 
-    logger.info("✓ Socket.io event handlers initialized successfully");
+    // ==================== SERVER-LEVEL ERROR HANDLING ====================
+
+    // Engine connection errors
+    io.engine.on("connection_error", (err) => {
+      logger.error("Socket.io engine connection error", {
+        message: err.message,
+        code: err.code,
+        context: err.context,
+      });
+    });
+
+    // Server errors
+    io.on("error", (error) => {
+      logger.error("Socket.io server error", {
+        error: error.message,
+        stack: error.stack,
+      });
+    });
+
+    logger.info("✓ Socket.io initialized successfully", {
+      clientURL: clientURL,
+      transports: ["websocket", "polling"],
+    });
+
+    return io;
   } catch (error) {
-    logger.error("Error initializing socket handlers", {
+    logger.error("Failed to initialize Socket.io", {
       message: error.message,
       stack: error.stack,
     });
@@ -70,5 +107,39 @@ export const initializeSocketHandlers = () => {
   }
 };
 
-export default { initializeSocketHandlers };
+/**
+ * Get Socket.io instance
+ * @returns {Server} Socket.io server instance
+ * @throws {Error} If Socket.io is not initialized
+ */
+export const getSocket = () => {
+  if (!io) {
+    const error = new Error("Socket.io not initialized. Call initializeSocket first.");
+    logger.error("Socket.io access error", {
+      message: error.message,
+    });
+    throw error;
+  }
+  return io;
+};
 
+/**
+ * Close Socket.io server gracefully
+ * Useful for graceful shutdown
+ * @returns {Promise<void>}
+ */
+export const closeSocket = async () => {
+  if (io) {
+    return new Promise((resolve) => {
+      io.close(() => {
+        logger.info("Socket.io server closed", {
+          timestamp: new Date().toISOString(),
+        });
+        io = null;
+        resolve();
+      });
+    });
+  }
+};
+
+export default { initializeSocket, getSocket, closeSocket };

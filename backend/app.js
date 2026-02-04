@@ -30,6 +30,7 @@ import taskRoutes from "./src/routes/taskRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
 import reportRoutes from "./src/routes/reportRoutes.js";
 import uploadRoutes from "./src/routes/uploadRoutes.js";
+import swaggerRoutes from "./src/routes/swaggerRoutes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -158,6 +159,9 @@ app.use("/api/reports", reportLimiter, reportRoutes);
 
 // File upload routes (rate limited)
 app.use("/api/uploads", uploadLimiter, uploadRoutes);
+
+// Swagger documentation routes
+app.use("/api/docs", swaggerRoutes);
 
 // Root route
 app.get("/", (req, res) => {

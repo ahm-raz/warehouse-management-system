@@ -23,9 +23,69 @@ const router = express.Router();
 router.use(authenticate);
 
 /**
- * @route   POST /api/tasks
- * @desc    Create a new task
- * @access  Private (Admin, Manager)
+ * @swagger
+ * /api/tasks:
+ *   post:
+ *     summary: Create a new task
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - taskType
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 200
+ *                 example: Restock Warehouse A
+ *               description:
+ *                 type: string
+ *                 maxLength: 1000
+ *                 example: Restock products in Warehouse A section
+ *               taskType:
+ *                 type: string
+ *                 enum: [Picking, Packing, Receiving, Inventory, Other]
+ *                 example: Inventory
+ *               priority:
+ *                 type: string
+ *                 enum: [Low, Medium, High, Urgent]
+ *                 default: Medium
+ *                 example: Medium
+ *               assignedTo:
+ *                 type: string
+ *                 example: 507f1f77bcf86cd799439015
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *                 example: 2024-12-31T23:59:59Z
+ *     responses:
+ *       201:
+ *         description: Task created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Task created successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     task:
+ *                       $ref: '#/components/schemas/Task'
+ *       403:
+ *         description: Forbidden - Admin or Manager role required
  */
 router.post(
   "/",
@@ -34,9 +94,66 @@ router.post(
 );
 
 /**
- * @route   GET /api/tasks
- * @desc    Get all tasks with pagination and filtering
- * @access  Private (All authenticated users)
+ * @swagger
+ * /api/tasks:
+ *   get:
+ *     summary: Get all tasks with pagination and filtering
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [Pending, InProgress, Completed, Cancelled]
+ *         description: Filter by task status
+ *       - in: query
+ *         name: taskType
+ *         schema:
+ *           type: string
+ *           enum: [Picking, Packing, Receiving, Inventory, Other]
+ *         description: Filter by task type
+ *     responses:
+ *       200:
+ *         description: Tasks retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Tasks retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     tasks:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Task'
+ *                     pagination:
+ *                       $ref: '#/components/schemas/Pagination'
+ *       401:
+ *         description: Unauthorized
  */
 router.get("/", getTasksHandler);
 
@@ -48,23 +165,150 @@ router.get("/", getTasksHandler);
 router.get("/staff/:staffId", getStaffTasksHandler);
 
 /**
- * @route   GET /api/tasks/:id
- * @desc    Get task by ID
- * @access  Private (All authenticated users)
+ * @swagger
+ * /api/tasks/{id}:
+ *   get:
+ *     summary: Get task by ID
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Task retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Task retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     task:
+ *                       $ref: '#/components/schemas/Task'
+ *       404:
+ *         description: Task not found
+ *       401:
+ *         description: Unauthorized
  */
 router.get("/:id", getTaskByIdHandler);
 
 /**
- * @route   PATCH /api/tasks/:id/status
- * @desc    Update task status
- * @access  Private (All authenticated users)
+ * @swagger
+ * /api/tasks/{id}/status:
+ *   patch:
+ *     summary: Update task status
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [Pending, InProgress, Completed, Cancelled]
+ *                 example: InProgress
+ *     responses:
+ *       200:
+ *         description: Task status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Task status updated successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     task:
+ *                       $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Invalid status transition
+ *       404:
+ *         description: Task not found
  */
 router.patch("/:id/status", updateTaskStatusHandler);
 
 /**
- * @route   PATCH /api/tasks/:id/assign
- * @desc    Assign or reassign task
- * @access  Private (Admin, Manager)
+ * @swagger
+ * /api/tasks/{id}/assign:
+ *   patch:
+ *     summary: Assign or reassign task
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - staffId
+ *             properties:
+ *               staffId:
+ *                 type: string
+ *                 example: 507f1f77bcf86cd799439015
+ *     responses:
+ *       200:
+ *         description: Task assigned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Task assigned successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     task:
+ *                       $ref: '#/components/schemas/Task'
+ *       403:
+ *         description: Forbidden - Admin or Manager role required
+ *       404:
+ *         description: Task or staff not found
  */
 router.patch(
   "/:id/assign",
@@ -73,9 +317,38 @@ router.patch(
 );
 
 /**
- * @route   DELETE /api/tasks/:id
- * @desc    Soft delete task
- * @access  Private (Admin, Manager)
+ * @swagger
+ * /api/tasks/{id}:
+ *   delete:
+ *     summary: Soft delete task
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Task deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Task deleted successfully
+ *       403:
+ *         description: Forbidden - Admin or Manager role required
+ *       404:
+ *         description: Task not found
  */
 router.delete(
   "/:id",

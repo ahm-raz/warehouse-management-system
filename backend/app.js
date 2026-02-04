@@ -10,6 +10,7 @@ import requestLogger from "./src/logs/requestLogger.js";
 import notFound from "./src/middleware/notFound.js";
 import errorHandler from "./src/middleware/errorHandler.js";
 import logger from "./src/logs/logger.js";
+import authRoutes from "./src/routes/authRoutes.js";
 
 /**
  * Express Application Configuration
@@ -71,6 +72,9 @@ app.get("/api/health", (req, res) => {
     environment: process.env.NODE_ENV || "development",
   });
 });
+
+// Authentication routes
+app.use("/api/auth", authRoutes);
 
 // Root route
 app.get("/", (req, res) => {

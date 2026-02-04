@@ -107,5 +107,24 @@ export const getSocket = () => {
   return io;
 };
 
-export default { initializeSocket, getSocket };
+/**
+ * Verify socket authentication token
+ * Future-ready function for Socket.io authentication
+ * @param {string} token - Access token from socket handshake
+ * @returns {Promise<Object>} - Decoded token payload
+ */
+export const verifySocketToken = async (token) => {
+  try {
+    // Import token utilities dynamically to avoid circular dependencies
+    const { verifyAccessToken } = await import("../utils/token.js");
+    return verifyAccessToken(token);
+  } catch (error) {
+    logger.error("Socket authentication failed", {
+      error: error.message,
+    });
+    throw error;
+  }
+};
+
+export default { initializeSocket, getSocket, verifySocketToken };
 

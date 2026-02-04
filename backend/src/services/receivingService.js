@@ -404,6 +404,25 @@ export const updateReceivingStatus = async (receivingId, newStatus, performedBy)
 
         await inventoryLog.save({ session });
 
+        // Update location occupancy if product has storage location
+        if (product.storageLocation) {
+          try {
+            const Location = mongoose.model("Location");
+            const location = await Location.findById(product.storageLocation).session(session);
+            if (location && !location.isDeleted) {
+              location.currentOccupancy += item.quantity;
+              await location.save({ session });
+            }
+          } catch (locationError) {
+            logger.error("Failed to update location occupancy during receiving completion", {
+              error: locationError.message,
+              locationId: product.storageLocation,
+              productId: product._id,
+            });
+            // Don't throw - location update failure shouldn't break receiving completion
+          }
+        }
+
         logger.info("Inventory incremented for receiving completion", {
           receivingId: receiving._id,
           receivingNumber: receiving.receivingNumber,

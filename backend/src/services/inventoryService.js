@@ -82,6 +82,21 @@ export const adjustStock = async (
     // Commit transaction
     await session.commitTransaction();
 
+    // Update location occupancy if product has storage location
+    if (product.storageLocation) {
+      try {
+        const { recalculateLocationOccupancy } = await import("./locationService.js");
+        await recalculateLocationOccupancy(product.storageLocation.toString());
+      } catch (locationError) {
+        logger.error("Failed to update location occupancy", {
+          error: locationError.message,
+          locationId: product.storageLocation,
+          productId: product._id,
+        });
+        // Don't throw - location update failure shouldn't break inventory update
+      }
+    }
+
     // Check for low stock alert
     const isLowStock = product.isLowStock();
     if (isLowStock) {

@@ -18,6 +18,7 @@ import categoryRoutes from "./src/routes/categoryRoutes.js";
 import supplierRoutes from "./src/routes/supplierRoutes.js";
 import orderRoutes from "./src/routes/orderRoutes.js";
 import receivingRoutes from "./src/routes/receivingRoutes.js";
+import locationRoutes from "./src/routes/locationRoutes.js";
 
 /**
  * Express Application Configuration
@@ -103,6 +104,9 @@ app.use("/api/orders", orderRoutes);
 
 // Receiving management routes
 app.use("/api/receiving", receivingRoutes);
+
+// Location management routes
+app.use("/api/locations", locationRoutes);
 
 // Root route
 app.get("/", (req, res) => {

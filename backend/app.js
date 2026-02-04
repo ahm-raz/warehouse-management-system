@@ -21,6 +21,7 @@ import receivingRoutes from "./src/routes/receivingRoutes.js";
 import locationRoutes from "./src/routes/locationRoutes.js";
 import taskRoutes from "./src/routes/taskRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
+import reportRoutes from "./src/routes/reportRoutes.js";
 
 /**
  * Express Application Configuration
@@ -115,6 +116,9 @@ app.use("/api/tasks", taskRoutes);
 
 // Notification management routes
 app.use("/api/notifications", notificationRoutes);
+
+// Report management routes
+app.use("/api/reports", reportRoutes);
 
 // Root route
 app.get("/", (req, res) => {

@@ -11,6 +11,7 @@ import notFound from "./src/middleware/notFound.js";
 import errorHandler from "./src/middleware/errorHandler.js";
 import logger from "./src/logs/logger.js";
 import authRoutes from "./src/routes/authRoutes.js";
+import userRoutes from "./src/routes/userRoutes.js";
 
 /**
  * Express Application Configuration
@@ -75,6 +76,9 @@ app.get("/api/health", (req, res) => {
 
 // Authentication routes
 app.use("/api/auth", authRoutes);
+
+// User management routes
+app.use("/api/users", userRoutes);
 
 // Root route
 app.get("/", (req, res) => {

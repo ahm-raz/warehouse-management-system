@@ -21,8 +21,11 @@ import logger from "../logs/logger.js";
 export const registerUser = async (userData) => {
   const { name, email, password, role } = userData;
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  // Check if user already exists (excluding deleted users)
+  const existingUser = await User.findOne({
+    email: email.toLowerCase(),
+    isDeleted: false,
+  });
   if (existingUser) {
     logger.warn("Registration attempt with existing email", {
       email: email.toLowerCase(),
@@ -72,7 +75,7 @@ export const registerUser = async (userData) => {
 export const loginUser = async (credentials, ipAddress) => {
   const { email, password } = credentials;
 
-  // Find user with password included
+  // Find user with password included (excluding deleted users)
   const user = await User.findByEmail(email.toLowerCase());
 
   if (!user) {
@@ -81,6 +84,16 @@ export const loginUser = async (credentials, ipAddress) => {
       ip: ipAddress,
     });
     throw new ApiError(401, "Invalid email or password");
+  }
+
+  // Check if account is deleted
+  if (user.isDeleted) {
+    logger.warn("Login attempt on deleted account", {
+      userId: user._id,
+      email: user.email,
+      ip: ipAddress,
+    });
+    throw new ApiError(403, "Account has been deleted");
   }
 
   // Check if account is active

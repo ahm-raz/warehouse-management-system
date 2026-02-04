@@ -68,6 +68,14 @@ const userSchema = new mongoose.Schema(
     lockUntil: {
       type: Date,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    deletedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -79,6 +87,9 @@ const userSchema = new mongoose.Schema(
 // Compound index for email and role lookups
 userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
+userSchema.index({ isActive: 1 });
+userSchema.index({ isDeleted: 1 });
+userSchema.index({ email: 1, isDeleted: 1 }); // Compound index for email queries excluding deleted
 
 // ==================== PASSWORD HASHING ====================
 
@@ -200,18 +211,48 @@ userSchema.methods.toJSON = function () {
   return userObject;
 };
 
+/**
+ * Soft delete user
+ * Sets isDeleted flag and deletedAt timestamp
+ * @returns {Promise<void>}
+ */
+userSchema.methods.softDelete = async function () {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  this.isActive = false; // Also deactivate when deleted
+  return await this.save();
+};
+
 // ==================== STATIC METHODS ====================
 
 /**
  * Find user by email
  * Includes password and refreshToken for authentication
+ * Excludes deleted users
  * @param {string} email - User email
  * @returns {Promise<Object>} - User document
  */
 userSchema.statics.findByEmail = function (email) {
-  return this.findOne({ email: email.toLowerCase() }).select(
-    "+password +refreshToken"
-  );
+  return this.findOne({ 
+    email: email.toLowerCase(),
+    isDeleted: false 
+  }).select("+password +refreshToken");
+};
+
+/**
+ * Query helper to exclude deleted users
+ * Can be chained with other query methods
+ */
+userSchema.query.notDeleted = function () {
+  return this.where({ isDeleted: false });
+};
+
+/**
+ * Query helper to include deleted users
+ * For admin operations that need to see all users
+ */
+userSchema.query.includeDeleted = function () {
+  return this;
 };
 
 const User = mongoose.model("User", userSchema);

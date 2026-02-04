@@ -79,11 +79,14 @@ export const authenticate = async (req, res, next) => {
       throw new ApiError(401, "Invalid token type.");
     }
 
-    // Check if user exists and is active
-    const user = await User.findById(decoded.userId);
+    // Check if user exists, is active, and not deleted
+    const user = await User.findOne({
+      _id: decoded.userId,
+      isDeleted: false,
+    });
 
     if (!user) {
-      logger.warn("Token for non-existent user", {
+      logger.warn("Token for non-existent or deleted user", {
         userId: decoded.userId,
         url: req.originalUrl,
         method: req.method,

@@ -331,9 +331,62 @@ router.delete(
 );
 
 /**
- * @route   GET /api/orders/:id/activity
- * @desc    Get order activity logs
- * @access  Private (All authenticated users)
+ * @swagger
+ * /api/orders/{id}/activity:
+ *   get:
+ *     summary: Get order activity logs
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Activity logs retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Activity logs retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     logs:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ActivityLog'
+ *                     pagination:
+ *                       $ref: '#/components/schemas/Pagination'
+ *       404:
+ *         description: Order not found
+ *       401:
+ *         description: Unauthorized
  */
 router.get("/:id/activity", getOrderActivityLogsHandler);
 

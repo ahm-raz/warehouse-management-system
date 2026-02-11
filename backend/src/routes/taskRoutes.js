@@ -158,9 +158,68 @@ router.post(
 router.get("/", getTasksHandler);
 
 /**
- * @route   GET /api/tasks/staff/:staffId
- * @desc    Get tasks assigned to specific staff member
- * @access  Private (All authenticated users)
+ * @swagger
+ * /api/tasks/staff/{staffId}:
+ *   get:
+ *     summary: Get tasks assigned to specific staff member
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: staffId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Staff member ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [Pending, InProgress, Completed, Cancelled]
+ *         description: Filter by task status
+ *     responses:
+ *       200:
+ *         description: Staff tasks retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Staff tasks retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     tasks:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Task'
+ *                     pagination:
+ *                       $ref: '#/components/schemas/Pagination'
+ *       404:
+ *         description: Staff member not found
+ *       401:
+ *         description: Unauthorized
  */
 router.get("/staff/:staffId", getStaffTasksHandler);
 
@@ -357,9 +416,62 @@ router.delete(
 );
 
 /**
- * @route   GET /api/tasks/:id/activity
- * @desc    Get task activity logs
- * @access  Private (All authenticated users)
+ * @swagger
+ * /api/tasks/{id}/activity:
+ *   get:
+ *     summary: Get task activity logs
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Activity logs retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Activity logs retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     logs:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ActivityLog'
+ *                     pagination:
+ *                       $ref: '#/components/schemas/Pagination'
+ *       404:
+ *         description: Task not found
+ *       401:
+ *         description: Unauthorized
  */
 router.get("/:id/activity", getTaskActivityLogsHandler);
 

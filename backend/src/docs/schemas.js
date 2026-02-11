@@ -403,4 +403,371 @@ export const commonSchemas = {
       updatedAt: { type: "string", format: "date-time" },
     },
   },
+
+  /**
+   * @swagger
+   * components:
+   *   schemas:
+   *     Notification:
+   *       type: object
+   *       properties:
+   *         _id:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439011
+   *         recipient:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439015
+   *         message:
+   *           type: string
+   *           example: New order has been assigned to you
+   *         type:
+   *           type: string
+   *           enum: [Info, Warning, Error, Success]
+   *           example: Info
+   *         isRead:
+   *           type: boolean
+   *           example: false
+   *         createdAt:
+   *           type: string
+   *           format: date-time
+   *         updatedAt:
+   *           type: string
+   *           format: date-time
+   */
+  Notification: {
+    type: "object",
+    properties: {
+      _id: { type: "string", example: "507f1f77bcf86cd799439011" },
+      recipient: { type: "string", example: "507f1f77bcf86cd799439015" },
+      message: { type: "string", example: "New order has been assigned to you" },
+      type: { type: "string", enum: ["Info", "Warning", "Error", "Success"], example: "Info" },
+      isRead: { type: "boolean", example: false },
+      createdAt: { type: "string", format: "date-time" },
+      updatedAt: { type: "string", format: "date-time" },
+    },
+  },
+
+  /**
+   * @swagger
+   * components:
+   *   schemas:
+   *     Category:
+   *       type: object
+   *       properties:
+   *         _id:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439011
+   *         name:
+   *           type: string
+   *           example: Electronics
+   *         description:
+   *           type: string
+   *           example: Electronic devices and accessories
+   *         parent:
+   *           type: string
+   *           nullable: true
+   *           example: 507f1f77bcf86cd799439012
+   *         createdAt:
+   *           type: string
+   *           format: date-time
+   *         updatedAt:
+   *           type: string
+   *           format: date-time
+   */
+  Category: {
+    type: "object",
+    properties: {
+      _id: { type: "string", example: "507f1f77bcf86cd799439011" },
+      name: { type: "string", example: "Electronics" },
+      description: { type: "string", example: "Electronic devices and accessories" },
+      parent: { type: "string", nullable: true, example: "507f1f77bcf86cd799439012" },
+      createdAt: { type: "string", format: "date-time" },
+      updatedAt: { type: "string", format: "date-time" },
+    },
+  },
+
+  /**
+   * @swagger
+   * components:
+   *   schemas:
+   *     Location:
+   *       type: object
+   *       properties:
+   *         _id:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439011
+   *         name:
+   *           type: string
+   *           example: Warehouse A - Aisle 1
+   *         locationType:
+   *           type: string
+   *           enum: [Warehouse, Zone, Aisle, Shelf, Bin]
+   *           example: Aisle
+   *         parent:
+   *           type: string
+   *           nullable: true
+   *           example: 507f1f77bcf86cd799439012
+   *         capacity:
+   *           type: integer
+   *           example: 1000
+   *         currentUtilization:
+   *           type: integer
+   *           example: 750
+   *         createdAt:
+   *           type: string
+   *           format: date-time
+   *         updatedAt:
+   *           type: string
+   *           format: date-time
+   */
+  Location: {
+    type: "object",
+    properties: {
+      _id: { type: "string", example: "507f1f77bcf86cd799439011" },
+      name: { type: "string", example: "Warehouse A - Aisle 1" },
+      locationType: { type: "string", enum: ["Warehouse", "Zone", "Aisle", "Shelf", "Bin"], example: "Aisle" },
+      parent: { type: "string", nullable: true, example: "507f1f77bcf86cd799439012" },
+      capacity: { type: "integer", example: 1000 },
+      currentUtilization: { type: "integer", example: 750 },
+      createdAt: { type: "string", format: "date-time" },
+      updatedAt: { type: "string", format: "date-time" },
+    },
+  },
+
+  /**
+   * @swagger
+   * components:
+   *   schemas:
+   *     InventoryLog:
+   *       type: object
+   *       properties:
+   *         _id:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439011
+   *         product:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439012
+   *         transactionType:
+   *           type: string
+   *           enum: [Adjustment, Sale, Purchase, Return, Transfer]
+   *           example: Adjustment
+   *         quantityChange:
+   *           type: integer
+   *           example: 50
+   *         previousQuantity:
+   *           type: integer
+   *           example: 100
+   *         newQuantity:
+   *           type: integer
+   *           example: 150
+   *         reason:
+   *           type: string
+   *           example: Stock replenishment
+   *         performedBy:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439015
+   *         createdAt:
+   *           type: string
+   *           format: date-time
+   */
+  InventoryLog: {
+    type: "object",
+    properties: {
+      _id: { type: "string", example: "507f1f77bcf86cd799439011" },
+      product: { type: "string", example: "507f1f77bcf86cd799439012" },
+      transactionType: { type: "string", enum: ["Adjustment", "Sale", "Purchase", "Return", "Transfer"], example: "Adjustment" },
+      quantityChange: { type: "integer", example: 50 },
+      previousQuantity: { type: "integer", example: 100 },
+      newQuantity: { type: "integer", example: 150 },
+      reason: { type: "string", example: "Stock replenishment" },
+      performedBy: { type: "string", example: "507f1f77bcf86cd799439015" },
+      createdAt: { type: "string", format: "date-time" },
+    },
+  },
+
+  /**
+   * @swagger
+   * components:
+   *   schemas:
+   *     ReceivingItem:
+   *       type: object
+   *       required:
+   *         - product
+   *         - quantityOrdered
+   *         - quantityReceived
+   *       properties:
+   *         product:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439011
+   *         quantityOrdered:
+   *           type: integer
+   *           minimum: 1
+   *           example: 100
+   *         quantityReceived:
+   *           type: integer
+   *           minimum: 0
+   *           example: 95
+   *         unitPrice:
+   *           type: number
+   *           format: float
+   *           example: 99.99
+   */
+  ReceivingItem: {
+    type: "object",
+    required: ["product", "quantityOrdered", "quantityReceived"],
+    properties: {
+      product: { type: "string", example: "507f1f77bcf86cd799439011" },
+      quantityOrdered: { type: "integer", minimum: 1, example: 100 },
+      quantityReceived: { type: "integer", minimum: 0, example: 95 },
+      unitPrice: { type: "number", format: "float", example: 99.99 },
+    },
+  },
+
+  /**
+   * @swagger
+   * components:
+   *   schemas:
+   *     Receiving:
+   *       type: object
+   *       properties:
+   *         _id:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439011
+   *         receivingNumber:
+   *           type: string
+   *           example: RCV-2024-001
+   *         supplier:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439013
+   *         items:
+   *           type: array
+   *           items:
+   *             $ref: '#/components/schemas/ReceivingItem'
+   *         status:
+   *           type: string
+   *           enum: [Pending, PartiallyReceived, Received, Cancelled]
+   *           example: Pending
+   *         expectedDate:
+   *           type: string
+   *           format: date-time
+   *         receivedDate:
+   *           type: string
+   *           format: date-time
+   *           nullable: true
+   *         notes:
+   *           type: string
+   *           example: Delivery scheduled for morning
+   *         createdBy:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439015
+   *         createdAt:
+   *           type: string
+   *           format: date-time
+   *         updatedAt:
+   *           type: string
+   *           format: date-time
+   */
+  Receiving: {
+    type: "object",
+    properties: {
+      _id: { type: "string", example: "507f1f77bcf86cd799439011" },
+      receivingNumber: { type: "string", example: "RCV-2024-001" },
+      supplier: { type: "string", example: "507f1f77bcf86cd799439013" },
+      items: {
+        type: "array",
+        items: { $ref: "#/components/schemas/ReceivingItem" },
+      },
+      status: {
+        type: "string",
+        enum: ["Pending", "PartiallyReceived", "Received", "Cancelled"],
+        example: "Pending",
+      },
+      expectedDate: { type: "string", format: "date-time" },
+      receivedDate: { type: "string", format: "date-time", nullable: true },
+      notes: { type: "string", example: "Delivery scheduled for morning" },
+      createdBy: { type: "string", example: "507f1f77bcf86cd799439015" },
+      createdAt: { type: "string", format: "date-time" },
+      updatedAt: { type: "string", format: "date-time" },
+    },
+  },
+
+  /**
+   * @swagger
+   * components:
+   *   schemas:
+   *     ActivityLog:
+   *       type: object
+   *       properties:
+   *         _id:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439011
+   *         action:
+   *           type: string
+   *           example: Status Updated
+   *         performedBy:
+   *           type: string
+   *           example: 507f1f77bcf86cd799439015
+   *         details:
+   *           type: object
+   *           example: { "from": "Pending", "to": "InProgress" }
+   *         timestamp:
+   *           type: string
+   *           format: date-time
+   */
+  ActivityLog: {
+    type: "object",
+    properties: {
+      _id: { type: "string", example: "507f1f77bcf86cd799439011" },
+      action: { type: "string", example: "Status Updated" },
+      performedBy: { type: "string", example: "507f1f77bcf86cd799439015" },
+      details: { type: "object", example: { from: "Pending", to: "InProgress" } },
+      timestamp: { type: "string", format: "date-time" },
+    },
+  },
+
+  /**
+   * @swagger
+   * components:
+   *   schemas:
+   *     FileUploadResponse:
+   *       type: object
+   *       properties:
+   *         success:
+   *           type: boolean
+   *           example: true
+   *         message:
+   *           type: string
+   *           example: File uploaded successfully
+   *         data:
+   *           type: object
+   *           properties:
+   *             filename:
+   *               type: string
+   *               example: product-image-1234567890.jpg
+   *             path:
+   *               type: string
+   *               example: /uploads/products/images/product-image-1234567890.jpg
+   *             size:
+   *               type: integer
+   *               example: 245678
+   *             mimetype:
+   *               type: string
+   *               example: image/jpeg
+   */
+  FileUploadResponse: {
+    type: "object",
+    properties: {
+      success: { type: "boolean", example: true },
+      message: { type: "string", example: "File uploaded successfully" },
+      data: {
+        type: "object",
+        properties: {
+          filename: { type: "string", example: "product-image-1234567890.jpg" },
+          path: { type: "string", example: "/uploads/products/images/product-image-1234567890.jpg" },
+          size: { type: "integer", example: 245678 },
+          mimetype: { type: "string", example: "image/jpeg" },
+        },
+      },
+    },
+  },
 };

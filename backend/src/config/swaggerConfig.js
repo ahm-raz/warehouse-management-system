@@ -64,8 +64,24 @@ const swaggerDefinition = {
       description: "Product management endpoints",
     },
     {
+      name: "Inventory",
+      description: "Inventory tracking and stock adjustment endpoints",
+    },
+    {
+      name: "Categories",
+      description: "Product category management endpoints",
+    },
+    {
+      name: "Locations",
+      description: "Warehouse location management endpoints",
+    },
+    {
       name: "Orders",
       description: "Order management endpoints",
+    },
+    {
+      name: "Receiving",
+      description: "Receiving and inbound shipment management endpoints",
     },
     {
       name: "Tasks",
@@ -102,6 +118,7 @@ const swaggerOptions = {
   definition: swaggerDefinition,
   apis: [
     join(__dirname, "../routes/*.js"),
+    join(__dirname, "../docs/schemas.js"),
   ],
 };
 

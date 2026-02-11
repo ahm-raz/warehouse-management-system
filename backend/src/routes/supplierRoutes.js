@@ -295,16 +295,124 @@ router.delete(
 );
 
 /**
- * @route   GET /api/suppliers/:id/products
- * @desc    Get products linked to supplier
- * @access  Private (All authenticated users)
+ * @swagger
+ * /api/suppliers/{id}/products:
+ *   get:
+ *     summary: Get products linked to supplier
+ *     tags: [Suppliers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Supplier ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Supplier products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Supplier products retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     products:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Product'
+ *                     pagination:
+ *                       $ref: '#/components/schemas/Pagination'
+ *       404:
+ *         description: Supplier not found
+ *       401:
+ *         description: Unauthorized
  */
 router.get("/:id/products", getSupplierProductsHandler);
 
 /**
- * @route   GET /api/suppliers/:id/activity
- * @desc    Get supplier activity logs
- * @access  Private (Admin, Manager)
+ * @swagger
+ * /api/suppliers/{id}/activity:
+ *   get:
+ *     summary: Get supplier activity logs
+ *     tags: [Suppliers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Supplier ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Activity logs retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Activity logs retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     logs:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ActivityLog'
+ *                     pagination:
+ *                       $ref: '#/components/schemas/Pagination'
+ *       403:
+ *         description: Forbidden - Admin or Manager role required
+ *       404:
+ *         description: Supplier not found
+ *       401:
+ *         description: Unauthorized
  */
 router.get(
   "/:id/activity",

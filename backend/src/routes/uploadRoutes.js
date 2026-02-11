@@ -23,15 +23,56 @@ router.use(authenticate);
 router.use(authorizeRoles(userRoles.ADMIN, userRoles.MANAGER));
 
 /**
- * @route   POST /api/uploads/products/:productId/image
- * @desc    Upload product image
- * @access  Private (Admin, Manager)
- * 
- * Request:
- * - multipart/form-data
- * - Field name: 'image'
- * - File types: jpeg, jpg, png, webp
- * - Max size: 5MB
+ * @swagger
+ * /api/uploads/products/{productId}/image:
+ *   post:
+ *     summary: Upload product image
+ *     tags: [Uploads]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - image
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: Product image file (jpeg, jpg, png, webp - max 5MB)
+ *     responses:
+ *       200:
+ *         description: Image uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/FileUploadResponse'
+ *       400:
+ *         description: Validation error or invalid file type
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin or Manager role required
+ *       404:
+ *         description: Product not found
+ *       413:
+ *         description: File too large (max 5MB)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post(
   "/products/:productId/image",

@@ -12,6 +12,8 @@ import { userRoles } from "../models/User.js";
 /**
  * Notification Management Routes
  * All notification management endpoints
+ *
+ * Notification types: LOW_STOCK, ORDER_STATUS, TASK_ASSIGNMENT, SYSTEM_ALERT
  */
 
 const router = express.Router();
@@ -24,6 +26,9 @@ router.use(authenticate);
  * /api/notifications:
  *   post:
  *     summary: Create a new notification
+ *     description: >
+ *       Creates a notification for a specific user. Typically used by the system
+ *       for alerts, but Admin/Manager can create manually.
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
@@ -34,22 +39,35 @@ router.use(authenticate);
  *           schema:
  *             type: object
  *             required:
- *               - recipient
+ *               - user
+ *               - title
  *               - message
+ *               - type
  *             properties:
- *               recipient:
+ *               user:
  *                 type: string
+ *                 description: Recipient user ObjectId
  *                 example: 507f1f77bcf86cd799439015
+ *               title:
+ *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 200
+ *                 description: Notification title
+ *                 example: Low Stock Alert
  *               message:
  *                 type: string
- *                 minLength: 1
- *                 maxLength: 500
- *                 example: New order has been assigned to you
+ *                 maxLength: 1000
+ *                 description: Notification message body
+ *                 example: Product LAPTOP-001 is below minimum stock level
  *               type:
  *                 type: string
- *                 enum: [Info, Warning, Error, Success]
- *                 default: Info
- *                 example: Info
+ *                 enum: [LOW_STOCK, ORDER_STATUS, TASK_ASSIGNMENT, SYSTEM_ALERT]
+ *                 description: Notification category type
+ *                 example: LOW_STOCK
+ *               metadata:
+ *                 type: object
+ *                 description: Additional context data
+ *                 example: { "productId": "507f1f77bcf86cd799439012", "currentQuantity": 5 }
  *     responses:
  *       201:
  *         description: Notification created successfully
@@ -89,6 +107,7 @@ router.post(
  * /api/notifications:
  *   get:
  *     summary: Get user notifications with pagination and filtering
+ *     description: Returns notifications for the currently authenticated user.
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
@@ -109,15 +128,15 @@ router.post(
  *           default: 10
  *         description: Items per page
  *       - in: query
- *         name: isRead
+ *         name: readStatus
  *         schema:
  *           type: boolean
- *         description: Filter by read status
+ *         description: Filter by read status (true = read, false = unread)
  *       - in: query
  *         name: type
  *         schema:
  *           type: string
- *           enum: [Info, Warning, Error, Success]
+ *           enum: [LOW_STOCK, ORDER_STATUS, TASK_ASSIGNMENT, SYSTEM_ALERT]
  *         description: Filter by notification type
  *     responses:
  *       200:
@@ -152,6 +171,7 @@ router.get("/", getNotificationsHandler);
  * /api/notifications/{id}/read:
  *   patch:
  *     summary: Mark notification as read
+ *     description: Sets readStatus to true and records the readAt timestamp.
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
@@ -197,6 +217,7 @@ router.patch("/:id/read", markNotificationAsReadHandler);
  * /api/notifications/read-all:
  *   patch:
  *     summary: Mark all notifications as read for logged-in user
+ *     description: Bulk operation to mark all unread notifications as read for the authenticated user.
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
@@ -219,6 +240,7 @@ router.patch("/:id/read", markNotificationAsReadHandler);
  *                   properties:
  *                     modifiedCount:
  *                       type: integer
+ *                       description: Number of notifications marked as read
  *                       example: 5
  *       401:
  *         description: Unauthorized
@@ -230,6 +252,7 @@ router.patch("/read-all", markAllNotificationsAsReadHandler);
  * /api/notifications/{id}:
  *   delete:
  *     summary: Soft delete notification
+ *     description: Marks a notification as deleted (soft delete). The notification is not permanently removed.
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []

@@ -27,6 +27,11 @@ router.use(authenticate);
  * /api/tasks:
  *   post:
  *     summary: Create a new task
+ *     description: >
+ *       Creates a new warehouse task and assigns it to a staff member.
+ *       Task type determines required relationships:
+ *       - **Picking/Packing**: requires `relatedOrder`
+ *       - **Receiving**: requires `relatedReceiving`
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []
@@ -39,32 +44,38 @@ router.use(authenticate);
  *             required:
  *               - title
  *               - taskType
+ *               - assignedTo
  *             properties:
  *               title:
  *                 type: string
  *                 minLength: 3
  *                 maxLength: 200
- *                 example: Restock Warehouse A
+ *                 example: Pick items for ORD-20240101-00001
  *               description:
  *                 type: string
  *                 maxLength: 1000
- *                 example: Restock products in Warehouse A section
+ *                 example: Pick items from Zone A for order fulfillment
  *               taskType:
  *                 type: string
- *                 enum: [Picking, Packing, Receiving, Inventory, Other]
- *                 example: Inventory
+ *                 enum: [Picking, Packing, Receiving]
+ *                 example: Picking
  *               priority:
  *                 type: string
- *                 enum: [Low, Medium, High, Urgent]
+ *                 enum: [Low, Medium, High]
  *                 default: Medium
  *                 example: Medium
  *               assignedTo:
  *                 type: string
+ *                 description: Staff member ObjectId (must have Staff role)
  *                 example: 507f1f77bcf86cd799439015
- *               dueDate:
+ *               relatedOrder:
  *                 type: string
- *                 format: date-time
- *                 example: 2024-12-31T23:59:59Z
+ *                 description: Order ObjectId (required for Picking/Packing tasks)
+ *                 example: 507f1f77bcf86cd799439017
+ *               relatedReceiving:
+ *                 type: string
+ *                 description: Receiving ObjectId (required for Receiving tasks)
+ *                 example: 507f1f77bcf86cd799439018
  *     responses:
  *       201:
  *         description: Task created successfully
@@ -84,6 +95,12 @@ router.use(authenticate);
  *                   properties:
  *                     task:
  *                       $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Validation error (missing fields, invalid task type, or missing related entity)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
  *         description: Forbidden - Admin or Manager role required
  */
@@ -127,8 +144,14 @@ router.post(
  *         name: taskType
  *         schema:
  *           type: string
- *           enum: [Picking, Packing, Receiving, Inventory, Other]
+ *           enum: [Picking, Packing, Receiving]
  *         description: Filter by task type
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [Low, Medium, High]
+ *         description: Filter by task priority
  *     responses:
  *       200:
  *         description: Tasks retrieved successfully
@@ -269,6 +292,11 @@ router.get("/:id", getTaskByIdHandler);
  * /api/tasks/{id}/status:
  *   patch:
  *     summary: Update task status
+ *     description: >
+ *       Updates task status following valid transitions:
+ *       - Pending → InProgress, Cancelled
+ *       - InProgress → Completed, Cancelled
+ *       - Completed and Cancelled are final states
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []
@@ -322,7 +350,8 @@ router.patch("/:id/status", updateTaskStatusHandler);
  * @swagger
  * /api/tasks/{id}/assign:
  *   patch:
- *     summary: Assign or reassign task
+ *     summary: Assign or reassign task to staff member
+ *     description: Assigns a task to a staff member. The target user must have the Staff role.
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []
@@ -344,6 +373,7 @@ router.patch("/:id/status", updateTaskStatusHandler);
  *             properties:
  *               staffId:
  *                 type: string
+ *                 description: Staff member ObjectId (must have Staff role)
  *                 example: 507f1f77bcf86cd799439015
  *     responses:
  *       200:
@@ -380,6 +410,7 @@ router.patch(
  * /api/tasks/{id}:
  *   delete:
  *     summary: Soft delete task
+ *     description: Marks a task as deleted (soft delete). The task is not permanently removed.
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []
@@ -420,6 +451,7 @@ router.delete(
  * /api/tasks/{id}/activity:
  *   get:
  *     summary: Get task activity logs
+ *     description: Retrieves the audit trail of all changes made to a specific task.
  *     tags: [Tasks]
  *     security:
  *       - bearerAuth: []

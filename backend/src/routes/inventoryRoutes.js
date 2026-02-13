@@ -10,6 +10,8 @@ import { userRoles } from "../models/User.js";
 /**
  * Inventory Management Routes
  * All inventory management endpoints
+ *
+ * Action types: ADD, REMOVE, UPDATE
  */
 
 const router = express.Router();
@@ -23,6 +25,9 @@ router.use(authorizeRoles(userRoles.ADMIN, userRoles.MANAGER));
  * /api/inventory/adjust:
  *   patch:
  *     summary: Adjust stock quantity
+ *     description: >
+ *       Adjusts the stock quantity for a product. Creates an inventory log entry
+ *       tracking the change, including previous and new quantities.
  *     tags: [Inventory]
  *     security:
  *       - bearerAuth: []
@@ -34,22 +39,27 @@ router.use(authorizeRoles(userRoles.ADMIN, userRoles.MANAGER));
  *             type: object
  *             required:
  *               - productId
- *               - quantityChange
- *               - transactionType
+ *               - action
+ *               - quantityChanged
  *             properties:
  *               productId:
  *                 type: string
+ *                 description: Product ObjectId to adjust stock for
  *                 example: 507f1f77bcf86cd799439012
- *               quantityChange:
- *                 type: integer
- *                 example: 50
- *               transactionType:
+ *               action:
  *                 type: string
- *                 enum: [Adjustment, Sale, Purchase, Return, Transfer]
- *                 example: Adjustment
- *               reason:
+ *                 enum: [ADD, REMOVE, UPDATE]
+ *                 description: Type of inventory action
+ *                 example: ADD
+ *               quantityChanged:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: Quantity to add or remove
+ *                 example: 50
+ *               note:
  *                 type: string
  *                 maxLength: 500
+ *                 description: Reason or note for the adjustment
  *                 example: Stock replenishment from supplier
  *     responses:
  *       200:
@@ -88,6 +98,7 @@ router.patch("/adjust", adjustStockHandler);
  * /api/inventory/logs:
  *   get:
  *     summary: Get inventory logs with filtering
+ *     description: Retrieves all inventory change logs with optional filtering by action type and date range.
  *     tags: [Inventory]
  *     security:
  *       - bearerAuth: []
@@ -108,11 +119,11 @@ router.patch("/adjust", adjustStockHandler);
  *           default: 10
  *         description: Items per page
  *       - in: query
- *         name: transactionType
+ *         name: action
  *         schema:
  *           type: string
- *           enum: [Adjustment, Sale, Purchase, Return, Transfer]
- *         description: Filter by transaction type
+ *           enum: [ADD, REMOVE, UPDATE]
+ *         description: Filter by action type
  *       - in: query
  *         name: startDate
  *         schema:
@@ -158,6 +169,7 @@ router.get("/logs", getInventoryLogsHandler);
  * /api/inventory/logs/{productId}:
  *   get:
  *     summary: Get inventory logs for a specific product
+ *     description: Retrieves the inventory change history for a specific product.
  *     tags: [Inventory]
  *     security:
  *       - bearerAuth: []

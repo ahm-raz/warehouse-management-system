@@ -13,6 +13,8 @@ import { userRoles } from "../models/User.js";
 /**
  * Receiving Management Routes
  * All receiving management endpoints
+ *
+ * Status workflow: Pending → Completed / Cancelled
  */
 
 const router = express.Router();
@@ -25,6 +27,10 @@ router.use(authenticate);
  * /api/receiving:
  *   post:
  *     summary: Create a new receiving record
+ *     description: >
+ *       Creates a new inbound stock receiving record. A unique receiving number
+ *       (REC-YYYYMMDD-XXXXX) is auto-generated. The supplier must be active and
+ *       all products must exist.
  *     tags: [Receiving]
  *     security:
  *       - bearerAuth: []
@@ -36,25 +42,42 @@ router.use(authenticate);
  *             type: object
  *             required:
  *               - supplier
- *               - items
- *               - expectedDate
+ *               - receivedItems
  *             properties:
  *               supplier:
  *                 type: string
+ *                 description: Supplier ObjectId (must be ACTIVE)
  *                 example: 507f1f77bcf86cd799439013
- *               items:
+ *               receivedItems:
  *                 type: array
+ *                 description: Array of received items (at least 1, no duplicate products)
  *                 minItems: 1
  *                 items:
- *                   $ref: '#/components/schemas/ReceivingItem'
- *               expectedDate:
- *                 type: string
- *                 format: date-time
- *                 example: 2024-12-31T10:00:00Z
+ *                   type: object
+ *                   required:
+ *                     - product
+ *                     - quantity
+ *                     - unitCost
+ *                   properties:
+ *                     product:
+ *                       type: string
+ *                       description: Product ObjectId
+ *                       example: 507f1f77bcf86cd799439011
+ *                     quantity:
+ *                       type: integer
+ *                       minimum: 1
+ *                       description: Quantity received
+ *                       example: 100
+ *                     unitCost:
+ *                       type: number
+ *                       format: float
+ *                       minimum: 0
+ *                       description: Cost per unit
+ *                       example: 49.99
  *               notes:
  *                 type: string
  *                 maxLength: 1000
- *                 example: Delivery scheduled for morning
+ *                 example: Delivery from Tech Supplies Inc.
  *     responses:
  *       201:
  *         description: Receiving record created successfully
@@ -75,7 +98,7 @@ router.use(authenticate);
  *                     receiving:
  *                       $ref: '#/components/schemas/Receiving'
  *       400:
- *         description: Validation error
+ *         description: Validation error (duplicate products, inactive supplier, etc.)
  *         content:
  *           application/json:
  *             schema:
@@ -113,7 +136,7 @@ router.post("/", createReceivingHandler);
  *         name: status
  *         schema:
  *           type: string
- *           enum: [Pending, PartiallyReceived, Received, Cancelled]
+ *           enum: [Pending, Completed, Cancelled]
  *         description: Filter by receiving status
  *       - in: query
  *         name: supplier
@@ -194,6 +217,10 @@ router.get("/:id", getReceivingByIdHandler);
  * /api/receiving/{id}/status:
  *   patch:
  *     summary: Update receiving status
+ *     description: >
+ *       Updates receiving status following valid transitions:
+ *       - Pending → Completed, Cancelled
+ *       - Completed and Cancelled are final states
  *     tags: [Receiving]
  *     security:
  *       - bearerAuth: []
@@ -215,8 +242,8 @@ router.get("/:id", getReceivingByIdHandler);
  *             properties:
  *               status:
  *                 type: string
- *                 enum: [Pending, PartiallyReceived, Received, Cancelled]
- *                 example: Received
+ *                 enum: [Pending, Completed, Cancelled]
+ *                 example: Completed
  *     responses:
  *       200:
  *         description: Receiving status updated successfully
@@ -254,6 +281,7 @@ router.patch(
  * /api/receiving/{id}:
  *   delete:
  *     summary: Soft delete receiving
+ *     description: Marks a receiving record as deleted (soft delete). The record is not permanently removed.
  *     tags: [Receiving]
  *     security:
  *       - bearerAuth: []
@@ -294,6 +322,7 @@ router.delete(
  * /api/receiving/{id}/activity:
  *   get:
  *     summary: Get receiving activity logs
+ *     description: Retrieves the audit trail of all changes made to a specific receiving record.
  *     tags: [Receiving]
  *     security:
  *       - bearerAuth: []

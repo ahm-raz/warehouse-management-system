@@ -37,13 +37,14 @@ router.use(authenticate);
  *           schema:
  *             type: object
  *             required:
- *               - supplierName
+ *               - name
  *               - email
+ *               - phone
  *             properties:
- *               supplierName:
+ *               name:
  *                 type: string
  *                 minLength: 2
- *                 maxLength: 200
+ *                 maxLength: 100
  *                 example: Tech Supplies Inc.
  *               email:
  *                 type: string
@@ -186,9 +187,74 @@ router.get("/", getSuppliersHandler);
 router.get("/:id", getSupplierByIdHandler);
 
 /**
- * @route   PUT /api/suppliers/:id
- * @desc    Update supplier
- * @access  Private (Admin, Manager)
+ * @swagger
+ * /api/suppliers/{id}:
+ *   put:
+ *     summary: Update supplier
+ *     tags: [Suppliers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Supplier ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 example: Updated Supplier Name
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: updated@techsupplies.com
+ *               phone:
+ *                 type: string
+ *                 example: +1-555-9876
+ *               company:
+ *                 type: string
+ *                 example: Updated Tech Supplies Inc.
+ *               address:
+ *                 type: string
+ *                 example: 456 Updated St, City, State 12345
+ *     responses:
+ *       200:
+ *         description: Supplier updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Supplier updated successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     supplier:
+ *                       $ref: '#/components/schemas/Supplier'
+ *       400:
+ *         description: Validation error - At least one field must be provided
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Admin or Manager role required
+ *       404:
+ *         description: Supplier not found
  */
 router.put(
   "/:id",

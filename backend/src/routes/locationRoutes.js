@@ -15,6 +15,9 @@ import { userRoles } from "../models/User.js";
 /**
  * Location Management Routes
  * All location management endpoints
+ *
+ * Location structure: Zone → Rack → Shelf → Bin
+ * Each combination of zone+rack+shelf+bin must be unique.
  */
 
 const router = express.Router();
@@ -26,7 +29,10 @@ router.use(authenticate);
  * @swagger
  * /api/locations:
  *   post:
- *     summary: Create a new location
+ *     summary: Create a new storage location
+ *     description: >
+ *       Creates a new warehouse storage location. Locations follow a hierarchical
+ *       structure: Zone → Rack → Shelf → Bin. Each combination must be unique.
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
@@ -37,25 +43,39 @@ router.use(authenticate);
  *           schema:
  *             type: object
  *             required:
- *               - name
- *               - locationType
+ *               - zone
+ *               - rack
+ *               - shelf
+ *               - bin
  *             properties:
- *               name:
+ *               zone:
  *                 type: string
- *                 minLength: 2
- *                 maxLength: 100
- *                 example: Warehouse A - Aisle 1
- *               locationType:
+ *                 description: Zone identifier (auto-uppercased, max 50 chars)
+ *                 maxLength: 50
+ *                 example: A
+ *               rack:
  *                 type: string
- *                 enum: [Warehouse, Zone, Aisle, Shelf, Bin]
- *                 example: Aisle
- *               parent:
+ *                 description: Rack identifier (max 50 chars)
+ *                 maxLength: 50
+ *                 example: R01
+ *               shelf:
  *                 type: string
- *                 nullable: true
- *                 example: 507f1f77bcf86cd799439012
+ *                 description: Shelf identifier (max 50 chars)
+ *                 maxLength: 50
+ *                 example: S01
+ *               bin:
+ *                 type: string
+ *                 description: Bin identifier (max 50 chars)
+ *                 maxLength: 50
+ *                 example: B01
+ *               description:
+ *                 type: string
+ *                 maxLength: 500
+ *                 example: Main electronics storage area
  *               capacity:
  *                 type: integer
  *                 minimum: 0
+ *                 description: Maximum capacity (null = unlimited)
  *                 example: 1000
  *     responses:
  *       201:
@@ -77,7 +97,7 @@ router.use(authenticate);
  *                     location:
  *                       $ref: '#/components/schemas/Location'
  *       400:
- *         description: Validation error
+ *         description: Validation error or duplicate location
  *         content:
  *           application/json:
  *             schema:
@@ -116,16 +136,20 @@ router.post(
  *           default: 10
  *         description: Items per page
  *       - in: query
- *         name: locationType
+ *         name: zone
  *         schema:
  *           type: string
- *           enum: [Warehouse, Zone, Aisle, Shelf, Bin]
- *         description: Filter by location type
+ *         description: Filter by zone identifier
+ *       - in: query
+ *         name: rack
+ *         schema:
+ *           type: string
+ *         description: Filter by rack identifier
  *       - in: query
  *         name: search
  *         schema:
  *           type: string
- *         description: Search by location name
+ *         description: Search across zone, rack, shelf, bin fields
  *     responses:
  *       200:
  *         description: Locations retrieved successfully
@@ -159,6 +183,9 @@ router.get("/", getLocationsHandler);
  * /api/locations/tree:
  *   get:
  *     summary: Get location hierarchy tree
+ *     description: >
+ *       Returns all locations organized in a hierarchical tree structure:
+ *       Zone → Rack → Shelf → Bin. Useful for displaying warehouse layout.
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
@@ -182,7 +209,46 @@ router.get("/", getLocationsHandler);
  *                     tree:
  *                       type: array
  *                       items:
- *                         $ref: '#/components/schemas/Location'
+ *                         type: object
+ *                         properties:
+ *                           zone:
+ *                             type: string
+ *                             example: A
+ *                           racks:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 rack:
+ *                                   type: string
+ *                                   example: R01
+ *                                 shelves:
+ *                                   type: array
+ *                                   items:
+ *                                     type: object
+ *                                     properties:
+ *                                       shelf:
+ *                                         type: string
+ *                                         example: S01
+ *                                       bins:
+ *                                         type: array
+ *                                         items:
+ *                                           type: object
+ *                                           properties:
+ *                                             _id:
+ *                                               type: string
+ *                                             bin:
+ *                                               type: string
+ *                                             description:
+ *                                               type: string
+ *                                             capacity:
+ *                                               type: integer
+ *                                               nullable: true
+ *                                             currentOccupancy:
+ *                                               type: integer
+ *                                             fullPath:
+ *                                               type: string
+ *                                               example: A-R01-S01-B01
  *       401:
  *         description: Unauthorized
  */
@@ -251,11 +317,30 @@ router.get("/:id", getLocationByIdHandler);
  *           schema:
  *             type: object
  *             properties:
- *               name:
+ *               zone:
  *                 type: string
- *                 example: Updated Warehouse A - Aisle 1
+ *                 description: Zone identifier (auto-uppercased)
+ *                 maxLength: 50
+ *                 example: B
+ *               rack:
+ *                 type: string
+ *                 maxLength: 50
+ *                 example: R02
+ *               shelf:
+ *                 type: string
+ *                 maxLength: 50
+ *                 example: S03
+ *               bin:
+ *                 type: string
+ *                 maxLength: 50
+ *                 example: B05
+ *               description:
+ *                 type: string
+ *                 maxLength: 500
+ *                 example: Updated storage area description
  *               capacity:
  *                 type: integer
+ *                 minimum: 0
  *                 example: 1500
  *     responses:
  *       200:
@@ -277,7 +362,7 @@ router.get("/:id", getLocationByIdHandler);
  *                     location:
  *                       $ref: '#/components/schemas/Location'
  *       400:
- *         description: Validation error
+ *         description: Validation error or duplicate location combination
  *       403:
  *         description: Forbidden - Admin or Manager role required
  *       404:
@@ -294,6 +379,7 @@ router.put(
  * /api/locations/{id}/assign-product:
  *   patch:
  *     summary: Assign product to location
+ *     description: Assigns a product's storage location to this warehouse location.
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
@@ -315,6 +401,7 @@ router.put(
  *             properties:
  *               productId:
  *                 type: string
+ *                 description: Product ObjectId to assign to this location
  *                 example: 507f1f77bcf86cd799439013
  *     responses:
  *       200:
@@ -345,7 +432,7 @@ router.patch(
  * @swagger
  * /api/locations/{id}/products:
  *   get:
- *     summary: Get products in location
+ *     summary: Get products stored in location
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
@@ -406,6 +493,7 @@ router.get("/:id/products", getLocationProductsHandler);
  * /api/locations/{id}:
  *   delete:
  *     summary: Soft delete location
+ *     description: Marks a location as deleted (soft delete). The location is not permanently removed.
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []

@@ -57,8 +57,8 @@ export const globalLimiter = rateLimit({
   legacyHeaders: false,
   handler: createRateLimitHandler("global"),
   skip: (req) => {
-    // Skip rate limiting for health check
-    return req.path === "/api/health";
+    // Skip rate limiting for health check and test environment
+    return req.path === "/api/health" || process.env.NODE_ENV === "test";
   },
 });
 
@@ -79,6 +79,10 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   handler: createRateLimitHandler("authentication"),
   skipSuccessfulRequests: false, // Count all requests, including successful ones
+  skip: (req) => {
+    // Skip rate limiting in test environment
+    return process.env.NODE_ENV === "test";
+  },
 });
 
 /**
